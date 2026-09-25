@@ -243,7 +243,7 @@ Composer refuses documents declaring features it does not know.
 
 **Menu bar icon** — `Resources/Assets.xcassets/MenuBarIcon.imageset/`, template
 PNGs at 18 / 36 / 54 px with `"template-rendering-intent": "template"`,
-consumed at `App/AIChatApp.swift:193` via `Image(Constants.menuBarIcon)` with
+consumed at `App/ThinspaceApp.swift:207` via `Image(Constants.menuBarIcon)` with
 `.renderingMode(.template)`. Unchanged by this redesign.
 
 ## Inherited findings (tested, kept)

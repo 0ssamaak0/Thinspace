@@ -187,8 +187,8 @@ extension ProviderAdapter {
         let privateChatPrelude: String
         if let privateChatState {
             privateChatPrelude = """
-            if (window.__aiChatSetPrivateChatState) {
-                window.__aiChatSetPrivateChatState(\(privateChatState ? "true" : "false"));
+            if (window.__thinspaceSetPrivateChatState) {
+                window.__thinspaceSetPrivateChatState(\(privateChatState ? "true" : "false"));
             }
             """
         } else {

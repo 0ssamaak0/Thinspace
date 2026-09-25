@@ -118,22 +118,21 @@ xattr -dr com.apple.quarantine "/Applications/Thinspace.app"
 ```bash
 git clone https://github.com/0ssamaak0/Thinspace.git
 cd Thinspace
-open AIChat.xcodeproj
+open Thinspace.xcodeproj
 ```
 
-Select the `AIChat` scheme in Xcode and run it on **My Mac**. The Xcode project,
-scheme and target are still named `AIChat` internally; the built product is
-`Thinspace.app`. For an unsigned command-line release build and DMG
-instructions, see [build_instructions.md](build_instructions.md).
+Select the `Thinspace` scheme in Xcode and run it on **My Mac**. For an unsigned
+command-line release build and DMG instructions, see
+[build_instructions.md](build_instructions.md).
 
 Run the provider architecture tests from the command line:
 
 ```bash
 xcodebuild test \
-  -project AIChat.xcodeproj \
-  -scheme AIChat \
+  -project Thinspace.xcodeproj \
+  -scheme Thinspace \
   -destination 'platform=macOS,arch=arm64' \
-  -only-testing:AIChatTests \
+  -only-testing:ThinspaceTests \
   CODE_SIGNING_ALLOWED=NO
 ```
 

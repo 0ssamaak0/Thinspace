@@ -1,9 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(xcodebuild -project ClaudeDesktop.xcodeproj -scheme ClaudeDesktop -configuration Debug -destination 'platform=macOS' build)",
-      "Bash(xcodebuild -project ClaudeDesktop.xcodeproj -scheme ClaudeDesktop -configuration Release -derivedDataPath build/ -destination 'platform=macOS' clean build)",
-      "Bash(xcodebuild -project ClaudeDesktop.xcodeproj -scheme ClaudeDesktop -configuration Release -derivedDataPath build/ -destination 'platform=macOS' CODE_SIGN_IDENTITY=\"-\" CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=\"\" PROVISIONING_PROFILE_SPECIFIER=\"\" clean build)",
+      "Bash(xcodebuild -project Thinspace.xcodeproj -scheme Thinspace *)",
+      "Bash(xcodebuild test -project Thinspace.xcodeproj -scheme Thinspace *)",
       "Bash(defaults read *)"
     ]
   }

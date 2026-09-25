@@ -2,7 +2,7 @@
 
 # Create a DMG for Thinspace.
 # Usage: ./scripts/create-dmg.sh [path/to/Thinspace.app] [output_dir]
-# Defaults: ~/Downloads/AIChat for both the app parent and DMG output.
+# Defaults: ~/Downloads/Thinspace for both the app parent and DMG output.
 
 set -euo pipefail
 

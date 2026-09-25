@@ -7,8 +7,8 @@ Build an unsigned local release from the repository root:
 
 ```bash
 xcodebuild \
-  -project AIChat.xcodeproj \
-  -scheme AIChat \
+  -project Thinspace.xcodeproj \
+  -scheme Thinspace \
   -configuration Release \
   -destination 'platform=macOS,arch=arm64' \
   -derivedDataPath ./build/DerivedData \

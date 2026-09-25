@@ -66,8 +66,8 @@ struct GeminiProviderAdapter: ProviderAdapter {
                 const temporary = first(temporarySelectors);
                 if (temporary) {
                     temporary.click();
-                    if (window.__aiChatSetPrivateChatState) {
-                        window.__aiChatSetPrivateChatState(true);
+                    if (window.__thinspaceSetPrivateChatState) {
+                        window.__thinspaceSetPrivateChatState(true);
                     }
                     if (sidebarWasOpened) {
                         setTimeout(function() {

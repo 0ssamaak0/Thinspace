@@ -154,8 +154,8 @@ struct ChatGPTProviderAdapter: ProviderAdapter {
             function verifyActivation(match, allowMenuFallback) {
                 const currentMatch = findControl() || match;
                 if (isActive(currentMatch.control, currentMatch.evidence)) {
-                    if (window.__aiChatSetPrivateChatState) {
-                        window.__aiChatSetPrivateChatState(true);
+                    if (window.__thinspaceSetPrivateChatState) {
+                        window.__thinspaceSetPrivateChatState(true);
                     }
                     console.log('[Thinspace] ChatGPT temporary chat activated');
                     return;
@@ -170,8 +170,8 @@ struct ChatGPTProviderAdapter: ProviderAdapter {
                     return;
                 }
 
-                if (window.__aiChatSetPrivateChatState) {
-                    window.__aiChatSetPrivateChatState(true);
+                if (window.__thinspaceSetPrivateChatState) {
+                    window.__thinspaceSetPrivateChatState(true);
                 }
                 console.log('[Thinspace] ChatGPT temporary chat control clicked; state not exposed');
             }
@@ -180,8 +180,8 @@ struct ChatGPTProviderAdapter: ProviderAdapter {
                 const match = findControl();
                 if (match) {
                     if (isActive(match.control, match.evidence)) {
-                        if (window.__aiChatSetPrivateChatState) {
-                            window.__aiChatSetPrivateChatState(true);
+                        if (window.__thinspaceSetPrivateChatState) {
+                            window.__thinspaceSetPrivateChatState(true);
                         }
                         console.log('[Thinspace] ChatGPT temporary chat already active');
                         return;

@@ -1,6 +1,6 @@
 //
 //  ProviderArchitectureTests.swift
-//  AIChatTests
+//  ThinspaceTests
 //
 
 import Foundation
@@ -187,7 +187,7 @@ final class ProviderUserScriptTests: XCTestCase {
         for provider in LLMProvider.allCases {
             let adapter = ProviderAdapters.adapter(for: provider)
             let privateChatScripts = UserScripts.createAllScripts(for: adapter).filter {
-                $0.source.contains("__aiChatPrivateChatObserverInstalled")
+                $0.source.contains("__thinspacePrivateChatObserverInstalled")
             }
 
             XCTAssertEqual(privateChatScripts.count, 1, provider.displayName)
@@ -209,7 +209,7 @@ final class ProviderUserScriptTests: XCTestCase {
             let adapter = ProviderAdapters.adapter(for: provider)
             let source = try XCTUnwrap(
                 UserScripts.createAllScripts(for: adapter).first {
-                    $0.source.contains("__aiChatPrivateChatObserverInstalled")
+                    $0.source.contains("__thinspacePrivateChatObserverInstalled")
                 }?.source
             )
             let encodedData = try JSONSerialization.data(
@@ -236,7 +236,7 @@ final class ProviderUserScriptTests: XCTestCase {
             let adapter = ProviderAdapters.adapter(for: provider)
             let source = try XCTUnwrap(
                 UserScripts.createAllScripts(for: adapter).first {
-                    $0.source.contains("__aiChatConversationObserverInstalled")
+                    $0.source.contains("__thinspaceConversationObserverInstalled")
                 }?.source
             )
             XCTAssertTrue(
@@ -301,7 +301,7 @@ final class ProviderUserScriptTests: XCTestCase {
 
             XCTAssertTrue(
                 webView.evaluatedScripts.contains {
-                    $0.contains("__aiChatSetPrivateChatState(false)")
+                    $0.contains("__thinspaceSetPrivateChatState(false)")
                 },
                 provider.displayName
             )
@@ -325,7 +325,7 @@ final class ProviderUserScriptTests: XCTestCase {
             XCTAssertTrue(webView.loadedRequests.isEmpty, adapter.provider.displayName)
             XCTAssertTrue(
                 webView.evaluatedScripts.contains {
-                    $0.contains("__aiChatSetPrivateChatState(false)")
+                    $0.contains("__thinspaceSetPrivateChatState(false)")
                 },
                 adapter.provider.displayName
             )
@@ -475,7 +475,7 @@ final class ProviderUserScriptTests: XCTestCase {
     ) throws -> Int {
         let observer = try XCTUnwrap(
             UserScripts.createAllScripts(for: ProviderAdapters.adapter(for: provider)).first {
-                $0.source.contains("__aiChatPrivateChatObserverInstalled")
+                $0.source.contains("__thinspacePrivateChatObserverInstalled")
             }?.source
         )
         let attributesJSON = try XCTUnwrap(
@@ -492,7 +492,7 @@ final class ProviderUserScriptTests: XCTestCase {
         context.evaluateScript(Self.privateObserverHarness)
         context.evaluateScript(observer)
         if whilePrivate {
-            context.evaluateScript("window.__aiChatSetPrivateChatState(true); flush();")
+            context.evaluateScript("window.__thinspaceSetPrivateChatState(true); flush();")
         }
         let count = context.evaluateScript("click(\(attributesJSON), \(textJSON))")
         XCTAssertNil(context.exception, provider.displayName)

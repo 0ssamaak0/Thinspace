@@ -17,41 +17,41 @@
 			containerPortal = 74CBD8A22EED8FCA00F226E3 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 74CBD8A92EED8FCB00F226E3;
-			remoteInfo = AIChat;
+			remoteInfo = Thinspace;
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		A1C4B0012F21000100A1C4B0 /* AIChatTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AIChatTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1C4B0012F21000100A1C4B0 /* ThinspaceTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ThinspaceTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1C4B0022F21000100A1C4B0 /* ProviderArchitectureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderArchitectureTests.swift; sourceTree = "<group>"; };
 		74CBD8AA2EED8FCB00F226E3 /* Thinspace.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Thinspace.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		749D25F02EEE2C330054BA29 /* Exceptions for "App" folder in "AIChat" target */ = {
+		749D25F02EEE2C330054BA29 /* Exceptions for "App" folder in "Thinspace" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				AppDelegate.swift,
-				AIChatApp.swift,
+				ThinspaceApp.swift,
 			);
-			target = 74CBD8A92EED8FCB00F226E3 /* AIChat */;
+			target = 74CBD8A92EED8FCB00F226E3 /* Thinspace */;
 		};
-		749D25F12EEE2C330054BA29 /* Exceptions for "Coordinators" folder in "AIChat" target */ = {
+		749D25F12EEE2C330054BA29 /* Exceptions for "Coordinators" folder in "Thinspace" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				AppCoordinator.swift,
 			);
-			target = 74CBD8A92EED8FCB00F226E3 /* AIChat */;
+			target = 74CBD8A92EED8FCB00F226E3 /* Thinspace */;
 		};
-		749D25F22EEE2C330054BA29 /* Exceptions for "Resources" folder in "AIChat" target */ = {
+		749D25F22EEE2C330054BA29 /* Exceptions for "Resources" folder in "Thinspace" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				AppIcon.icon,
 				Assets.xcassets,
 			);
-			target = 74CBD8A92EED8FCB00F226E3 /* AIChat */;
+			target = 74CBD8A92EED8FCB00F226E3 /* Thinspace */;
 		};
-		749D25F32EEE2C330054BA29 /* Exceptions for "Utils" folder in "AIChat" target */ = {
+		749D25F32EEE2C330054BA29 /* Exceptions for "Utils" folder in "Thinspace" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				"NSScreen+Extensions.swift",
@@ -59,15 +59,15 @@
 				SelectionCapture.swift,
 				UserDefaultsKeys.swift,
 			);
-			target = 74CBD8A92EED8FCB00F226E3 /* AIChat */;
+			target = 74CBD8A92EED8FCB00F226E3 /* Thinspace */;
 		};
-		749D26102EEE2E930054BA29 /* Exceptions for "ChatBar" folder in "AIChat" target */ = {
+		749D26102EEE2E930054BA29 /* Exceptions for "ChatBar" folder in "Thinspace" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				ChatBarPanel.swift,
 				ChatBarView.swift,
 			);
-			target = 74CBD8A92EED8FCB00F226E3 /* AIChat */;
+			target = 74CBD8A92EED8FCB00F226E3 /* Thinspace */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -85,7 +85,7 @@
 		749D25D32EEE2C330054BA29 /* App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				749D25F02EEE2C330054BA29 /* Exceptions for "App" folder in "AIChat" target */,
+				749D25F02EEE2C330054BA29 /* Exceptions for "App" folder in "Thinspace" target */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -93,7 +93,7 @@
 		749D25D52EEE2C330054BA29 /* Coordinators */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				749D25F12EEE2C330054BA29 /* Exceptions for "Coordinators" folder in "AIChat" target */,
+				749D25F12EEE2C330054BA29 /* Exceptions for "Coordinators" folder in "Thinspace" target */,
 			);
 			path = Coordinators;
 			sourceTree = "<group>";
@@ -101,7 +101,7 @@
 		749D25DA2EEE2C330054BA29 /* Resources */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				749D25F22EEE2C330054BA29 /* Exceptions for "Resources" folder in "AIChat" target */,
+				749D25F22EEE2C330054BA29 /* Exceptions for "Resources" folder in "Thinspace" target */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -109,7 +109,7 @@
 		749D25DC2EEE2C330054BA29 /* Utils */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				749D25F32EEE2C330054BA29 /* Exceptions for "Utils" folder in "AIChat" target */,
+				749D25F32EEE2C330054BA29 /* Exceptions for "Utils" folder in "Thinspace" target */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -122,7 +122,7 @@
 		749D25E32EEE2C330054BA29 /* ChatBar */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				749D26102EEE2E930054BA29 /* Exceptions for "ChatBar" folder in "AIChat" target */,
+				749D26102EEE2E930054BA29 /* Exceptions for "ChatBar" folder in "Thinspace" target */,
 			);
 			path = ChatBar;
 			sourceTree = "<group>";
@@ -168,7 +168,7 @@
 			isa = PBXGroup;
 			children = (
 				74CBD8AA2EED8FCB00F226E3 /* Thinspace.app */,
-				A1C4B0012F21000100A1C4B0 /* AIChatTests.xctest */,
+				A1C4B0012F21000100A1C4B0 /* ThinspaceTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -184,9 +184,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		A1C4B0072F21000100A1C4B0 /* AIChatTests */ = {
+		A1C4B0072F21000100A1C4B0 /* ThinspaceTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A1C4B00A2F21000100A1C4B0 /* Build configuration list for PBXNativeTarget "AIChatTests" */;
+			buildConfigurationList = A1C4B00A2F21000100A1C4B0 /* Build configuration list for PBXNativeTarget "ThinspaceTests" */;
 			buildPhases = (
 				A1C4B0062F21000100A1C4B0 /* Sources */,
 				A1C4B0042F21000100A1C4B0 /* Frameworks */,
@@ -197,16 +197,16 @@
 			dependencies = (
 				A1C4B00B2F21000100A1C4B0 /* PBXTargetDependency */,
 			);
-			name = AIChatTests;
+			name = ThinspaceTests;
 			packageProductDependencies = (
 			);
-			productName = AIChatTests;
-			productReference = A1C4B0012F21000100A1C4B0 /* AIChatTests.xctest */;
+			productName = ThinspaceTests;
+			productReference = A1C4B0012F21000100A1C4B0 /* ThinspaceTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		74CBD8A92EED8FCB00F226E3 /* AIChat */ = {
+		74CBD8A92EED8FCB00F226E3 /* Thinspace */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 74CBD8B52EED8FCB00F226E3 /* Build configuration list for PBXNativeTarget "AIChat" */;
+			buildConfigurationList = 74CBD8B52EED8FCB00F226E3 /* Build configuration list for PBXNativeTarget "Thinspace" */;
 			buildPhases = (
 				74CBD8A62EED8FCB00F226E3 /* Sources */,
 				74CBD8A72EED8FCB00F226E3 /* Frameworks */,
@@ -221,11 +221,11 @@
 				A1C4A7002F20000100A1C4A7 /* Providers */,
 				749D25E12EEE2C330054BA29 /* Views */,
 			);
-			name = AIChat;
+			name = Thinspace;
 			packageProductDependencies = (
 				74CBD8BF2EED900000F226E3 /* KeyboardShortcuts */,
 			);
-			productName = AIChat;
+			productName = Thinspace;
 			productReference = 74CBD8AA2EED8FCB00F226E3 /* Thinspace.app */;
 			productType = "com.apple.product-type.application";
 		};
@@ -248,7 +248,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 74CBD8A52EED8FCA00F226E3 /* Build configuration list for PBXProject "AIChat" */;
+			buildConfigurationList = 74CBD8A52EED8FCA00F226E3 /* Build configuration list for PBXProject "Thinspace" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -265,8 +265,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				74CBD8A92EED8FCB00F226E3 /* AIChat */,
-				A1C4B0072F21000100A1C4B0 /* AIChatTests */,
+				74CBD8A92EED8FCB00F226E3 /* Thinspace */,
+				A1C4B0072F21000100A1C4B0 /* ThinspaceTests */,
 			);
 		};
 /* End PBXProject section */
@@ -573,7 +573,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		A1C4B00A2F21000100A1C4B0 /* Build configuration list for PBXNativeTarget "AIChatTests" */ = {
+		A1C4B00A2F21000100A1C4B0 /* Build configuration list for PBXNativeTarget "ThinspaceTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A1C4B0082F21000100A1C4B0 /* Debug */,
@@ -582,7 +582,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		74CBD8A52EED8FCA00F226E3 /* Build configuration list for PBXProject "AIChat" */ = {
+		74CBD8A52EED8FCA00F226E3 /* Build configuration list for PBXProject "Thinspace" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				74CBD8B32EED8FCB00F226E3 /* Debug */,
@@ -591,7 +591,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		74CBD8B52EED8FCB00F226E3 /* Build configuration list for PBXNativeTarget "AIChat" */ = {
+		74CBD8B52EED8FCB00F226E3 /* Build configuration list for PBXNativeTarget "Thinspace" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				74CBD8B62EED8FCB00F226E3 /* Debug */,
@@ -605,7 +605,7 @@
 /* Begin PBXTargetDependency section */
 		A1C4B00B2F21000100A1C4B0 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 74CBD8A92EED8FCB00F226E3 /* AIChat */;
+			target = 74CBD8A92EED8FCB00F226E3 /* Thinspace */;
 			targetProxy = A1C4B00C2F21000100A1C4B0 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */

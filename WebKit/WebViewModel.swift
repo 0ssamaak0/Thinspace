@@ -385,8 +385,8 @@ final class WebViewModel {
         // loaded, and the WebView may be showing a non-provider page.
         wkWebView.evaluateJavaScript(
             """
-            if (window.__aiChatInsertSelection) {
-                window.__aiChatInsertSelection(\(payload));
+            if (window.__thinspaceInsertSelection) {
+                window.__thinspaceInsertSelection(\(payload));
             }
             """,
             completionHandler: nil

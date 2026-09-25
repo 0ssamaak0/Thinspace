@@ -1,5 +1,5 @@
 //
-//  AIChatApp.swift
+//  ThinspaceApp.swift
 //  Thinspace
 //
 //  Created by alexcding on 2025-12-13.
@@ -21,7 +21,7 @@ extension KeyboardShortcuts.Name {
 // MARK: - Main App
 
 @main
-struct AIChatApp: App {
+struct ThinspaceApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     /// Deliberately not `@State`. The global hotkey handler reads the
@@ -228,7 +228,7 @@ struct AIChatApp: App {
 
 // MARK: - Constants
 
-extension AIChatApp {
+extension ThinspaceApp {
     struct Constants {
         static let mainWindowMinWidth: CGFloat = 400
         static let mainWindowMinHeight: CGFloat = 300

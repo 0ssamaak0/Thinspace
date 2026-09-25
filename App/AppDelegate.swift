@@ -63,7 +63,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         guard hideWindowAtLaunch else { return }
 
         DispatchQueue.main.asyncAfter(
-            deadline: .now() + AIChatApp.Constants.hideWindowDelay
+            deadline: .now() + ThinspaceApp.Constants.hideWindowDelay
         ) {
             MainActor.assumeIsolated {
                 AppCoordinator.mainWindow()?.orderOut(nil)

@@ -352,6 +352,9 @@ extension AppCoordinator {
 
 // MARK: - NSToolbar Identifiers
 
+/// These strings, and the toolbar identifier below, keep the app's pre-rename
+/// "aichat" prefix on purpose: NSToolbar autosaves each user's customized
+/// layout under them, and renaming would silently reset every saved toolbar.
 extension NSToolbarItem.Identifier {
     static let aiBack = NSToolbarItem.Identifier("aichat.back")
     static let aiForward = NSToolbarItem.Identifier("aichat.forward")
@@ -378,6 +381,8 @@ final class MainToolbarDelegate: NSObject, NSToolbarDelegate, NSToolbarItemValid
     private let capabilities: ProviderCapabilities
     private var lastPinnedState: Bool?
 
+    /// Keeps the pre-rename prefix: it is the autosave key for each
+    /// provider's customized layout.
     static func toolbarIdentifier(for provider: LLMProvider) -> NSToolbar.Identifier {
         NSToolbar.Identifier("AIChatMainToolbar.\(provider.rawValue)")
     }

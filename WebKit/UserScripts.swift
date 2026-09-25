@@ -56,8 +56,8 @@ enum UserScripts {
 
     private static let consoleLogBridgeSource = """
     (function() {
-        if (window.__aiChatConsoleBridgeInstalled) return;
-        window.__aiChatConsoleBridgeInstalled = true;
+        if (window.__thinspaceConsoleBridgeInstalled) return;
+        window.__thinspaceConsoleBridgeInstalled = true;
         const originalLog = console.log.bind(console);
         console.log = function(...args) {
             originalLog(...args);
@@ -76,8 +76,8 @@ enum UserScripts {
     private static let imeFixSource = """
     (function() {
         'use strict';
-        if (window.__aiChatIMEFixInstalled) return;
-        window.__aiChatIMEFixInstalled = true;
+        if (window.__thinspaceIMEFixInstalled) return;
+        window.__thinspaceIMEFixInstalled = true;
 
         let imeActive = false;
         let imeEverUsed = false;
@@ -127,8 +127,8 @@ enum UserScripts {
     static let selectionInsertSource = """
     (function() {
         'use strict';
-        if (window.__aiChatSelectionBridgeInstalled) return;
-        window.__aiChatSelectionBridgeInstalled = true;
+        if (window.__thinspaceSelectionBridgeInstalled) return;
+        window.__thinspaceSelectionBridgeInstalled = true;
 
         const COMPOSER_SELECTORS = [
             '#prompt-textarea',
@@ -266,7 +266,7 @@ enum UserScripts {
             }, 60);
         }
 
-        window.__aiChatInsertSelection = function(value) {
+        window.__thinspaceInsertSelection = function(value) {
             if (!value || !value.text) return false;
             const text = quotedBlock(value);
             let tries = 0;
@@ -298,8 +298,8 @@ enum UserScripts {
         """
         (function() {
             'use strict';
-            if (window.__aiChatConversationObserverInstalled) return;
-            window.__aiChatConversationObserverInstalled = true;
+            if (window.__thinspaceConversationObserverInstalled) return;
+            window.__thinspaceConversationObserverInstalled = true;
 
             \(providerSource)
 
@@ -418,8 +418,8 @@ enum UserScripts {
         """
         (function() {
             'use strict';
-            if (window.__aiChatPrivateChatObserverInstalled) return;
-            window.__aiChatPrivateChatObserverInstalled = true;
+            if (window.__thinspacePrivateChatObserverInstalled) return;
+            window.__thinspacePrivateChatObserverInstalled = true;
 
             \(ProviderJS.visible)
 
@@ -571,7 +571,7 @@ enum UserScripts {
                 }, 900);
             }
 
-            window.__aiChatSetPrivateChatState = function(state) {
+            window.__thinspaceSetPrivateChatState = function(state) {
                 forcedState = !!state;
                 forcedStateUntil = Date.now() + 1500;
                 publishState(state, true);

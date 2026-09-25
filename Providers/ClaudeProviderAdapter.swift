@@ -74,8 +74,8 @@ struct ClaudeProviderAdapter: ProviderAdapter {
                 const button = findButton();
                 if (button) {
                     button.click();
-                    if (window.__aiChatSetPrivateChatState) {
-                        window.__aiChatSetPrivateChatState(true);
+                    if (window.__thinspaceSetPrivateChatState) {
+                        window.__thinspaceSetPrivateChatState(true);
                     }
                     console.log('[Thinspace] Claude private chat activated');
                     return;
