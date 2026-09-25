@@ -106,32 +106,81 @@ final class SelectionCaptureService {
 
     // MARK: - Capture
 
-    /// Reads the current selection synchronously, on the caller's thread.
+    /// Starts capturing the current selection. Call it before the Chat Bar is
+    /// presented, then collect the result with `SelectionCapture.deliver`.
     ///
-    /// This must run before the Chat Bar is presented. Deferring it to a
-    /// background queue loses the race against the panel taking focus, and the
-    /// system-wide focused element then reports Thinspace's own composer instead
-    /// of the source app's selection. The messaging timeout bounds each
-    /// Accessibility call, and an unresponsive source app costs about three
-    /// timeouts in total because every walk short-circuits on its first failed
-    /// fetch. What no per-call timeout bounds is a responsive-but-slow app
-    /// answering several hundred reads, which is why the walks below are
-    /// deduplicated and batched.
+    /// Only the reads that describe focus run here, on the caller's thread: the
+    /// system-wide focused element, and the fallback app's focused element and
+    /// window. Presenting the panel moves focus, and after that those same
+    /// reads report Thinspace's own composer, or nothing, instead of the source
+    /// app. They cost two round trips, each bounded by the messaging timeout.
+    /// Everything else — the parent walks, the descendant search, the document
+    /// label — reads the saved element references, which stay valid wherever
+    /// focus goes, and runs on a global queue while the panel appears.
     ///
-    /// Returns `nil` when the feature is off, permission is missing, nothing is
-    /// selected, or the source app does not expose its selection.
-    func captureNow() -> CapturedSelection? {
-        guard isReady else { return nil }
-        return AccessibilityReader.selection(
+    /// Returns `nil` when the feature is off, permission is missing, or
+    /// Thinspace itself is the active app. In that last case the fallback would
+    /// quote whatever was left selected in the app used before Thinspace: stale,
+    /// and not what the user is working with. The menu bar item does not
+    /// activate Thinspace, so a summon from there still captures.
+    func beginCapture() -> SelectionCapture? {
+        guard isReady, !NSApp.isActive else { return nil }
+        let targets = AccessibilityReader.focusTargets(
             excludingPID: ProcessInfo.processInfo.processIdentifier,
             fallback: lastActiveApp
         )
+        return SelectionCapture { AccessibilityReader.selection(resolving: targets) }
+    }
+}
+
+/// A capture in flight. The walk starts on creation, so it overlaps the Chat
+/// Bar's presentation instead of delaying it.
+final class SelectionCapture: @unchecked Sendable {
+    private let group = DispatchGroup()
+    /// Written once on the global queue before `group.leave()`, and read only
+    /// by the block `group.notify` submits after that leave. Dispatch orders the
+    /// read after the write, so the two never overlap.
+    private var result: CapturedSelection?
+
+    init(resolve: @escaping @Sendable () -> CapturedSelection?) {
+        group.enter()
+        DispatchQueue.global(qos: .userInitiated).async { [self] in
+            result = resolve()
+            group.leave()
+        }
+    }
+
+    /// Hands a found selection to `completion` on the main queue, behind every
+    /// block already queued there when this is called — even when the walk has
+    /// already finished. Nothing is delivered when nothing was found.
+    func deliver(_ completion: @escaping @MainActor (CapturedSelection) -> Void) {
+        group.notify(queue: .main) { [self] in
+            guard let result else { return }
+            MainActor.assumeIsolated { completion(result) }
+        }
     }
 }
 
 /// The Accessibility reads themselves, kept off the main-actor service because
-/// every call here is blocking IPC into another process.
+/// every call here is blocking IPC into another process. Only `focusTargets`
+/// runs on the main thread; the walk runs on a global queue.
 private enum AccessibilityReader {
+    /// The element references a capture resolves against.
+    ///
+    /// `@unchecked Sendable` because Swift does not mark the CF type
+    /// AXUIElement Sendable. The hand-off is still safe: each reference is an
+    /// immutable handle to an element in another process, CF reference
+    /// counting is atomic, and once `focusTargets` returns, only the walk on
+    /// the global queue uses them.
+    struct FocusTargets: @unchecked Sendable {
+        /// The system-wide focused element, when it belongs to another process.
+        let focused: AXUIElement?
+        /// `lastActiveApp`, when it is another process.
+        let fallback: (pid: pid_t, name: String)?
+        let fallbackFocused: AXUIElement?
+        let fallbackWindow: AXUIElement?
+    }
+
     /// The system default is six seconds, long enough for one unresponsive app
     /// to hang the capture. A miss is preferable to a stall.
     ///
@@ -146,8 +195,8 @@ private enum AccessibilityReader {
     /// Bounds the descendant search. A hit is fast — Safari answers in 12 nodes
     /// — but a miss walks the whole budget, and summoning the Chat Bar with
     /// nothing selected is the common case. This ceiling is therefore paid on
-    /// ordinary hotkey presses, before the panel is even created, and is kept
-    /// low on purpose.
+    /// ordinary hotkey presses — off the main thread, but still as reads the
+    /// source app has to answer — and is kept low on purpose.
     static let maximumSearchNodes = 80
     static let maximumSearchDepth = 10
 
@@ -164,36 +213,71 @@ private enum AccessibilityReader {
         kAXSliderRole, kAXProgressIndicatorRole
     ]
 
-    /// The system-wide focused element is the most accurate source, and at
-    /// hotkey time the source app is still frontmost. Once focus has moved into
-    /// Thinspace it falls back to the last application that was active.
-    static func selection(
+    /// The reads that describe focus, and so cannot wait. The system-wide
+    /// focused element is the most accurate source, and at hotkey time the
+    /// source app is still frontmost. Once focus has moved into Thinspace the
+    /// last application that was active is the fallback; its focused element
+    /// and window are read now, in one round trip, because while the Chat Bar
+    /// is key that app may no longer report them.
+    static func focusTargets(
         excludingPID ownPID: pid_t,
         fallback: (pid: pid_t, name: String)?
-    ) -> CapturedSelection? {
-        // Assigned in exactly one place: after the pid check, when the walk
-        // below actually runs. It is what lets the fallback path skip
-        // re-walking the identical element — usually the same ~39 blocking
-        // reads for the same nil answer.
-        var walked: AXUIElement?
-        if let focused = systemWideFocusedElement(), pid(of: focused) != ownPID {
-            walked = focused
-            if let selection = selection(from: focused) { return selection }
-        }
+    ) -> FocusTargets {
+        // First, because it also sets the process-wide messaging timeout that
+        // bounds every later call, the walk on the global queue included.
+        var focused = systemWideFocusedElement()
+        if let element = focused, pid(of: element) == ownPID { focused = nil }
 
-        guard let fallback, fallback.pid != ownPID else { return nil }
+        guard let fallback, fallback.pid != ownPID else {
+            return FocusTargets(
+                focused: focused,
+                fallback: nil,
+                fallbackFocused: nil,
+                fallbackWindow: nil
+            )
+        }
         let application = AXUIElementCreateApplication(fallback.pid)
         _ = AXUIElementSetMessagingTimeout(application, messagingTimeout)
+        let values = multipleValues(application, [
+            kAXFocusedUIElementAttribute,
+            kAXFocusedWindowAttribute
+        ])
+        return FocusTargets(
+            focused: focused,
+            fallback: fallback,
+            fallbackFocused: uiElement(values[0]),
+            fallbackWindow: uiElement(values[1])
+        )
+    }
 
-        if let focused = element(application, kAXFocusedUIElementAttribute),
-           !(walked.map { CFEqual($0, focused) } ?? false),
+    /// Resolves a capture on the global queue. The messaging timeout bounds
+    /// each call, and an unresponsive source app costs about three timeouts in
+    /// total because every walk short-circuits on its first failed fetch. What
+    /// no per-call timeout bounds is a responsive-but-slow app answering
+    /// several hundred reads, which is why the walks below are deduplicated and
+    /// batched.
+    ///
+    /// Returns `nil` when nothing is selected or the source app does not expose
+    /// its selection.
+    static func selection(resolving targets: FocusTargets) -> CapturedSelection? {
+        if let focused = targets.focused,
+           let selection = selection(from: focused) {
+            return selection
+        }
+
+        guard let fallback = targets.fallback else { return nil }
+
+        // Skipped when it is the element just walked: usually the same ~39
+        // blocking reads for the same nil answer.
+        if let focused = targets.fallbackFocused,
+           !(targets.focused.map { CFEqual($0, focused) } ?? false),
            let selection = selection(from: focused, appName: fallback.name) {
             return selection
         }
 
         // Safari and other WebKit hosts answer from neither focused element:
         // the selection lives on the web area, which is not what holds focus.
-        guard let window = element(application, kAXFocusedWindowAttribute),
+        guard let window = targets.fallbackWindow,
               let text = searchForSelectedText(under: window) else { return nil }
         return CapturedSelection(
             text: truncated(text),
@@ -204,7 +288,7 @@ private enum AccessibilityReader {
 
     /// Breadth-first and tightly bounded. The web area holding a page selection
     /// sits only a few levels under the window, so this finds it quickly or not
-    /// at all rather than crawling a whole UI tree on the main thread.
+    /// at all rather than crawling a whole UI tree over IPC.
     private static func searchForSelectedText(under window: AXUIElement) -> String? {
         var queue: [(element: AXUIElement, depth: Int)] = [(window, 0)]
         var visited = 0
@@ -364,9 +448,12 @@ private enum AccessibilityReader {
         _ element: AXUIElement,
         _ attribute: String
     ) -> AXUIElement? {
-        guard let result = value(element, attribute),
-              CFGetTypeID(result) == AXUIElementGetTypeID() else { return nil }
-        return (result as! AXUIElement)
+        uiElement(value(element, attribute))
+    }
+
+    private static func uiElement(_ value: CFTypeRef?) -> AXUIElement? {
+        guard let value, CFGetTypeID(value) == AXUIElementGetTypeID() else { return nil }
+        return (value as! AXUIElement)
     }
 
     private static func string(_ element: AXUIElement, _ attribute: String) -> String? {

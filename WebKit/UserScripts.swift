@@ -585,6 +585,20 @@ enum UserScripts {
                 schedule(2600);
             };
 
+            // Icon-only controls carry no name, so their test id is checked too.
+            // Attribute reads only: this runs ahead of the page's own handlers.
+            function isPrivateControl(control, name) {
+                if (/temporary( chat)?|incognito|private chat/i.test(name)) return true;
+                const testID = control.getAttribute('data-testid') ||
+                    control.getAttribute('data-test-id') || '';
+                return /temp(orary)?[-_ ]?chat|incognito|private[-_ ]?chat/i.test(testID);
+            }
+
+            // Only a click that can change private mode schedules detection.
+            // Every burst pass runs the detector's whole-page queries and
+            // visible() style reads, so bursting on every click was costly in a
+            // long, streaming conversation. Links and new chats that navigate
+            // are still caught by the history hooks below.
             document.addEventListener('click', function(event) {
                 const control = event.target instanceof Element
                     ? event.target.closest('button, [role="button"], a[href]')
@@ -592,12 +606,14 @@ enum UserScripts {
                 if (!control) return;
 
                 const name = elementName(control);
-                const clickedPrivateControl = /temporary( chat)?|incognito|private chat/i.test(name);
-                const clickedExitSurface = /\\bnew chat\\b|\\bstart (a )?new chat\\b/i.test(name);
+                const clickedPrivateControl = isPrivateControl(control, name);
                 const wasActive = lastState === true;
+                const clickedExitSurface = wasActive &&
+                    /\\bnew chat\\b|\\bstart (a )?new chat\\b/i.test(name);
+                if (!clickedPrivateControl && !clickedExitSurface) return;
                 scheduleBurst();
 
-                if (clickedExitSurface && wasActive) {
+                if (clickedExitSurface) {
                     setTimeout(function() { publishState(false); }, 120);
                     return;
                 }

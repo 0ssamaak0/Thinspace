@@ -331,6 +331,173 @@ final class ProviderUserScriptTests: XCTestCase {
             )
         }
     }
+
+    /// Claude Code and conversations must answer from the path before any DOM
+    /// query: a `true` disconnects the observer, and on Claude Code the
+    /// fallback scan would otherwise sweep the page on every streamed batch.
+    func testClaudeConversationDetectorAnswersFromThePathBeforeTheDOM() throws {
+        let detector = ClaudeProviderAdapter().conversationObserverSource
+
+        for path in ["/code", "/code/session-id", "/chat/thread-id"] {
+            let context = try XCTUnwrap(JSContext())
+            context.evaluateScript("""
+            var window = { location: { pathname: '\(path)' } };
+            var document = {
+                querySelector: function() { throw new Error('DOM queried'); },
+                querySelectorAll: function() { throw new Error('DOM queried'); }
+            };
+            """)
+            context.evaluateScript(detector)
+            let result = context.evaluateScript("isInProviderConversation()")
+            XCTAssertNil(context.exception, path)
+            XCTAssertEqual(result?.toBool(), true, path)
+        }
+
+        let context = try XCTUnwrap(JSContext())
+        context.evaluateScript("""
+        var window = { location: { pathname: '/new' } };
+        var document = { querySelector: function() { return null; } };
+        """)
+        context.evaluateScript(detector)
+        let result = context.evaluateScript("isInProviderConversation()")
+        XCTAssertNil(context.exception)
+        XCTAssertEqual(result?.toBool(), false)
+    }
+
+    /// Every detection pass runs the provider's whole-page queries, so a click
+    /// schedules one only when it can change private mode. Links and new chats
+    /// that navigate are covered by the history hooks instead.
+    func testPrivateChatObserverSchedulesDetectionOnlyForRelevantClicks() throws {
+        for provider in LLMProvider.allCases {
+            let name = provider.displayName
+
+            XCTAssertEqual(
+                try timersScheduledByClick(on: provider, attributes: ["aria-label": "Copy"]),
+                0, name
+            )
+            XCTAssertEqual(
+                try timersScheduledByClick(
+                    on: provider,
+                    attributes: ["href": "/chat/thread-id"],
+                    text: "Quarterly planning"
+                ),
+                0, name
+            )
+            XCTAssertEqual(
+                try timersScheduledByClick(on: provider, attributes: ["aria-label": "New chat"]),
+                0, name
+            )
+
+            XCTAssertGreaterThan(
+                try timersScheduledByClick(on: provider, attributes: ["aria-label": "Incognito chat"]),
+                0, name
+            )
+            XCTAssertGreaterThan(
+                try timersScheduledByClick(on: provider, attributes: [:], text: "Temporary chat"),
+                0, name
+            )
+            XCTAssertGreaterThan(
+                try timersScheduledByClick(
+                    on: provider,
+                    attributes: ["data-testid": "incognito-chat-button"]
+                ),
+                0, name
+            )
+            XCTAssertGreaterThan(
+                try timersScheduledByClick(
+                    on: provider,
+                    attributes: ["data-test-id": "temp-chat-button"]
+                ),
+                0, name
+            )
+            XCTAssertGreaterThan(
+                try timersScheduledByClick(
+                    on: provider,
+                    attributes: ["aria-label": "New chat"],
+                    whilePrivate: true
+                ),
+                0, name
+            )
+        }
+    }
+
+    /// Just enough DOM for the private-chat observer to install and start in a
+    /// bare JSContext. Timers are recorded, and run only when flushed.
+    private static let privateObserverHarness = """
+    var pending = [];
+    function setTimeout(callback, delay) { pending.push(callback); return pending.length; }
+    function flush() {
+        for (var rounds = 0; pending.length && rounds < 10; rounds++) {
+            var due = pending;
+            pending = [];
+            due.forEach(function(callback) { callback(); });
+        }
+    }
+    function getComputedStyle() { return { visibility: 'visible', display: 'block' }; }
+    function Element() {}
+    var clickListener = null;
+    var window = {
+        location: { href: 'https://example.com/', pathname: '/' },
+        addEventListener: function() {}
+    };
+    var document = {
+        readyState: 'complete',
+        body: {},
+        addEventListener: function(type, listener) {
+            if (type === 'click') clickListener = listener;
+        },
+        querySelector: function() { return null; },
+        querySelectorAll: function() { return []; }
+    };
+    var history = { pushState: function() {}, replaceState: function() {} };
+    function click(attributes, text) {
+        var control = Object.create(Element.prototype);
+        control.getAttribute = function(name) {
+            return Object.prototype.hasOwnProperty.call(attributes, name)
+                ? attributes[name] : null;
+        };
+        control.closest = function() { return control; };
+        control.childNodes = text ? [{ textContent: text }] : [];
+        control.textContent = text;
+        pending = [];
+        clickListener({ target: control });
+        return pending.length;
+    }
+    """
+
+    /// Counts the timers one click schedules in a freshly installed observer.
+    /// `whilePrivate` first confirms private mode the way native actions do.
+    private func timersScheduledByClick(
+        on provider: LLMProvider,
+        attributes: [String: String],
+        text: String = "",
+        whilePrivate: Bool = false
+    ) throws -> Int {
+        let observer = try XCTUnwrap(
+            UserScripts.createAllScripts(for: ProviderAdapters.adapter(for: provider)).first {
+                $0.source.contains("__aiChatPrivateChatObserverInstalled")
+            }?.source
+        )
+        let attributesJSON = try XCTUnwrap(
+            String(data: JSONSerialization.data(withJSONObject: attributes), encoding: .utf8)
+        )
+        let textJSON = try XCTUnwrap(
+            String(
+                data: JSONSerialization.data(withJSONObject: text, options: .fragmentsAllowed),
+                encoding: .utf8
+            )
+        )
+
+        let context = try XCTUnwrap(JSContext())
+        context.evaluateScript(Self.privateObserverHarness)
+        context.evaluateScript(observer)
+        if whilePrivate {
+            context.evaluateScript("window.__aiChatSetPrivateChatState(true); flush();")
+        }
+        let count = context.evaluateScript("click(\(attributesJSON), \(textJSON))")
+        XCTAssertNil(context.exception, provider.displayName)
+        return Int(count?.toInt32() ?? -1)
+    }
 }
 
 /// Pins the JavaScript each provider action emits, byte for byte. The shared
@@ -514,6 +681,26 @@ final class ProviderRoutingTests: XCTestCase {
         XCTAssertEqual(chatGPT.page(for: try url("https://chatgpt.com.example.org/c/id")), .other)
     }
 
+    /// Resume seeds conversation state from these answers before the page
+    /// loads; each must match what the in-page detector reports for the path.
+    func testConversationSurfacesMatchTheInPageDetectorPaths() throws {
+        XCTAssertTrue(claude.isConversationSurface(try url("https://claude.ai/chat/thread-id")))
+        XCTAssertTrue(claude.isConversationSurface(try url("https://claude.ai/code")))
+        XCTAssertTrue(claude.isConversationSurface(try url("https://claude.ai/code/session-id")))
+        XCTAssertFalse(claude.isConversationSurface(try url("https://claude.ai/new")))
+        XCTAssertFalse(claude.isConversationSurface(try url("https://claude.ai/projects")))
+        XCTAssertFalse(claude.isConversationSurface(try url("https://claude.ai/settings")))
+
+        XCTAssertTrue(gemini.isConversationSurface(try url("https://gemini.google.com/app/thread-id")))
+        XCTAssertFalse(gemini.isConversationSurface(try url("https://gemini.google.com/app")))
+
+        XCTAssertTrue(chatGPT.isConversationSurface(try url("https://chatgpt.com/c/thread-id")))
+        XCTAssertTrue(
+            chatGPT.isConversationSurface(try url("https://chatgpt.com/g/gpt-id/c/thread-id"))
+        )
+        XCTAssertFalse(chatGPT.isConversationSurface(try url("https://chatgpt.com/")))
+    }
+
     func testClaudeClassifiesApplicationAuthenticationMediaAndExternalURLs() throws {
         XCTAssertEqual(claude.classify(try url("https://claude.ai/new")), .application)
         XCTAssertEqual(claude.classify(try url("https://accounts.google.com/signin")), .authentication)
@@ -638,5 +825,55 @@ final class PageZoomTests: XCTestCase {
         for stop in PageZoom.ladder {
             XCTAssertEqual(PageZoom.nearest(to: stop), stop)
         }
+    }
+}
+
+/// Covers how a capture hands its result back. The Accessibility reads
+/// themselves need a permission the test host does not have.
+final class SelectionCaptureDeliveryTests: XCTestCase {
+    private static let sample = CapturedSelection(
+        text: "quoted",
+        appName: "Preview",
+        documentLabel: "paper.pdf"
+    )
+
+    func testWalkRunsOffTheMainThreadAndDeliveryRunsOnIt() {
+        let walkedOffMain = expectation(description: "walked off the main thread")
+        let delivered = expectation(description: "delivered")
+
+        let capture = SelectionCapture {
+            if !Thread.isMainThread { walkedOffMain.fulfill() }
+            return Self.sample
+        }
+        capture.deliver { selection in
+            XCTAssertTrue(Thread.isMainThread)
+            XCTAssertEqual(selection.sourceLabel, "Preview · paper.pdf")
+            delivered.fulfill()
+        }
+        wait(for: [walkedOffMain, delivered], timeout: 2, enforceOrder: true)
+    }
+
+    /// The walk often finishes while the panel is still being presented, before
+    /// the composer focus is queued. Delivery must still land behind that
+    /// focus, or focusing moves the caret back off the top of the quotation.
+    func testDeliveryQueuesBehindEarlierMainQueueWorkWhenTheWalkAlreadyFinished() {
+        let capture = SelectionCapture { Self.sample }
+        let walkFinished = expectation(description: "walk finished")
+        capture.deliver { _ in walkFinished.fulfill() }
+        wait(for: [walkFinished], timeout: 2)
+
+        let focused = expectation(description: "composer focus")
+        let inserted = expectation(description: "selection delivered")
+        DispatchQueue.main.async { focused.fulfill() }
+        capture.deliver { _ in inserted.fulfill() }
+        wait(for: [focused, inserted], timeout: 2, enforceOrder: true)
+    }
+
+    func testNothingIsDeliveredWhenNothingWasFound() {
+        let capture = SelectionCapture { nil }
+        let delivered = expectation(description: "delivered")
+        delivered.isInverted = true
+        capture.deliver { _ in delivered.fulfill() }
+        wait(for: [delivered], timeout: 0.3)
     }
 }

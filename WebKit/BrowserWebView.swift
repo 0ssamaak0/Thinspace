@@ -79,7 +79,7 @@ struct BrowserWebView: NSViewRepresentable {
             // Subframes remain untouched so provider resources can load normally.
             let isTopLevel = navigationAction.targetFrame?.isMainFrame ?? true
             if isTopLevel, webViewModel?.shouldOpenExternally(url) == true {
-                NSWorkspace.shared.open(url)
+                openExternally(url)
                 decisionHandler(.cancel)
                 return
             }
@@ -94,11 +94,21 @@ struct BrowserWebView: NSViewRepresentable {
         ) -> WKWebView? {
             guard let url = navigationAction.request.url else { return nil }
             if webViewModel?.shouldOpenExternally(url) == true {
-                NSWorkspace.shared.open(url)
+                openExternally(url)
             } else {
                 webView.load(URLRequest(url: url))
             }
             return nil
+        }
+
+        /// The asynchronous variant: the synchronous `open(_:)` blocks the main
+        /// thread on Launch Services while it resolves and launches the handler.
+        private func openExternally(_ url: URL) {
+            NSWorkspace.shared.open(
+                url,
+                configuration: NSWorkspace.OpenConfiguration(),
+                completionHandler: nil
+            )
         }
 
         func webView(

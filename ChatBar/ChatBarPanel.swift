@@ -199,10 +199,10 @@ final class ChatBarPanel: NSPanel, NSWindowDelegate {
     }
 
     /// Resolves the correct size before the panel's final presentation frame is
-    /// calculated. A hidden panel does not need to animate this adjustment.
+    /// calculated.
     func prepareForPresentation() {
         guard !isProgrammaticTransition else { return }
-        adjustSizeForConversationState(animated: false)
+        adjustSizeForConversationState()
         presentationFrame = frame
     }
 
@@ -252,8 +252,10 @@ final class ChatBarPanel: NSPanel, NSWindowDelegate {
         setPresentationContentOrigin(origin)
     }
 
-    /// Deferring focus by one run-loop turn gives BrowserWebView time to attach
-    /// the shared WKWebView after the destination window becomes key.
+    /// Deferred one run-loop turn. `presentAnimated` has already attached the
+    /// shared WKWebView by then, but callers queue work behind this focus —
+    /// the captured-selection insert in `AppCoordinator.showChatBar` relies on
+    /// running after it — so the deferral is part of the ordering contract.
     func focusComposer() {
         DispatchQueue.main.async { [weak self] in
             self?.webViewModel?.focusComposer()
@@ -352,30 +354,50 @@ final class ChatBarPanel: NSPanel, NSWindowDelegate {
             setFrame(initialFrame, display: false)
             alphaValue = 0
         }
+        // Staged while still fully transparent. Becoming key hands the shared
+        // WKWebView to this panel's host; the forced layout builds a freshly
+        // created panel's SwiftUI content, whose host attaches the WebView on
+        // arrival; the flush commits that first frame. All of it used to run
+        // after the fade had started and ate its first frames. It is the same
+        // pass the end of the run-loop turn would make, only done earlier.
         makeKeyAndOrderFront(nil)
+        layoutIfNeeded()
+        displayIfNeeded()
+        CATransaction.flush()
 
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = effectiveDuration
-            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
-            // NSWindow provides an implicit animation for `frame`, but not
-            // for `frameOrigin`. Keeping the size unchanged still makes this
-            // a position-only compositor move.
-            animator().setFrame(finalFrame, display: true)
-            animator().alphaValue = 1
-        } completionHandler: { [weak self] in
-            MainActor.assumeIsolated {
-                guard let self,
-                      generation == self.presentationGeneration else { return }
+        // The fade itself starts a turn later, so it never shares a frame with
+        // the staging above. Keyed to the state rather than the generation: a
+        // size reset in the gap also bumps the generation, and cancelling on
+        // that would strand an ordered-in, fully transparent panel. A
+        // dismissal in the gap moves the state off `.showing`.
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.presentationState == .showing, self.isVisible else {
+                return
+            }
 
-                self.setFrame(finalFrame, display: false)
-                self.alphaValue = 1
-                self.presentationFrame = finalFrame
-                self.isProgrammaticTransition = false
-                self.presentationState = .visible
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = effectiveDuration
+                context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+                // NSWindow provides an implicit animation for `frame`, but not
+                // for `frameOrigin`. Keeping the size unchanged still makes this
+                // a position-only compositor move.
+                self.animator().setFrame(finalFrame, display: true)
+                self.animator().alphaValue = 1
+            } completionHandler: { [weak self] in
+                MainActor.assumeIsolated {
+                    guard let self,
+                          generation == self.presentationGeneration else { return }
 
-                if self.pendingConversationExpansion {
-                    self.pendingConversationExpansion = false
-                    self.expandToNormalSize()
+                    self.setFrame(finalFrame, display: false)
+                    self.alphaValue = 1
+                    self.presentationFrame = finalFrame
+                    self.isProgrammaticTransition = false
+                    self.presentationState = .visible
+
+                    if self.pendingConversationExpansion {
+                        self.pendingConversationExpansion = false
+                        self.expandToNormalSize()
+                    }
                 }
             }
         }
@@ -471,18 +493,26 @@ final class ChatBarPanel: NSPanel, NSWindowDelegate {
         }
     }
 
-    private func adjustSizeForConversationState(animated: Bool = true) {
+    private func adjustSizeForConversationState() {
         let inConversation = webViewModel?.isInConversation ?? false
         if inConversation {
             if !isExpanded {
-                expandToNormalSize(animated: animated)
+                expandToNormalSize()
             }
         } else if isExpanded {
             resetToInitialSize()
         }
     }
 
-    private func expandToNormalSize(animated: Bool = true) {
+    /// Grows in a single step, never an animated resize: every step of a
+    /// window-frame animation resizes the live WKWebView, and each resize
+    /// makes the provider page lay itself out again at the new viewport.
+    ///
+    /// The `setFrame` posts `windowDidResize` synchronously with the final
+    /// frame, so there is no intermediate size for that handler to record, and
+    /// `isExpanded` is already set, so the expanded height is never persisted
+    /// as the user's chosen size.
+    private func expandToNormalSize() {
         guard !isExpanded, let screen = currentScreen else { return }
         isExpanded = true
 
@@ -500,40 +530,13 @@ final class ChatBarPanel: NSPanel, NSWindowDelegate {
             height: clampedHeight
         )
         presentationFrame = targetFrame
-
-        guard animated,
-              !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else {
-            setFrame(targetFrame, display: true)
-            return
-        }
-
-        // Window frame animations post `windowDidResize` on every step, and that
-        // handler records `presentationFrame` unless a programmatic transition
-        // is in progress. Without this flag an expand interrupted by a dismiss
-        // would persist a half-expanded height and reuse it on the next show.
-        presentationGeneration += 1
-        let generation = presentationGeneration
-        isProgrammaticTransition = true
-
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = Constants.animationDuration
-            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-            self.animator().setFrame(targetFrame, display: true)
-        } completionHandler: { [weak self] in
-            MainActor.assumeIsolated {
-                guard let self,
-                      generation == self.presentationGeneration else { return }
-
-                self.presentationFrame = targetFrame
-                self.isProgrammaticTransition = false
-            }
-        }
+        setFrame(targetFrame, display: true)
     }
 
     func resetToInitialSize() {
         isExpanded = false
-        // Invalidates any in-flight expand so its completion cannot restore the
-        // expanded height after this collapse.
+        // Invalidates any in-flight show or hide so its completion cannot
+        // restore the frame it captured before this collapse.
         presentationGeneration += 1
         isProgrammaticTransition = false
         let currentFrame = frame
@@ -692,7 +695,6 @@ extension ChatBarPanel {
             }
         }
         static let expandedScreenRatio: CGFloat = 0.7
-        static let animationDuration: TimeInterval = 0.3
         static let showDuration: TimeInterval = 0.16
         static let hideDuration: TimeInterval = 0.12
         static let reducedMotionDuration: TimeInterval = 0.08

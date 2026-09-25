@@ -134,6 +134,17 @@ extension ProviderAdapter {
         page(for: url) == .home
     }
 
+    /// The pages each adapter's `conversationObserverSource` answers `true`
+    /// for from the path alone, so native state can agree with the page before
+    /// it has loaded. Claude Code counts: it is a full-height app that needs
+    /// the expanded Chat Bar just as a conversation does.
+    func isConversationSurface(_ url: URL) -> Bool {
+        switch page(for: url) {
+        case .conversation, .code: return true
+        case .home, .projects, .other: return false
+        }
+    }
+
     /// Drops a single trailing slash so `/projects/` and `/projects` classify
     /// alike. Shared because all three adapters match paths the same way.
     func normalizedPath(_ path: String) -> String {

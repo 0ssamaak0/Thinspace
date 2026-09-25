@@ -59,7 +59,10 @@ final class PrivateChatStateHandler: NSObject, WKScriptMessageHandler {
 @MainActor
 @Observable
 final class WebViewModel {
-    private static let inactivityTimeout: TimeInterval = 10 * 60
+    /// Five minutes trades more cold summons — a full provider page reload —
+    /// for not keeping a page that can reach a gigabyte resident while nothing
+    /// is on screen. A visible window never suspends, whatever this value.
+    private static let inactivityTimeout: TimeInterval = 5 * 60
 
     /// Stable identity for the provider's persistent WebKit store. Internal so
     /// the app's tests can verify separation without exposing storage publicly.
@@ -517,6 +520,13 @@ final class WebViewModel {
         suspendedURL = nil
         resetNavigationState(loading: true)
         isAtHome = adapter.isHomeSurface(restoredURL)
+        // Seeded from the URL so a Chat Bar summoned into a restored
+        // conversation is sized before it is presented, instead of expanding
+        // over the live page once the load finishes. Routed through the
+        // handler, not assigned: a hidden panel ignores the callback and reads
+        // the state when it is next prepared, and a visible one still expands.
+        // The page's first publish agrees for these paths, so it adds nothing.
+        handleConversationState(adapter.isConversationSurface(restoredURL))
         wkWebView = Self.makeFullWebView(
             provider: provider,
             adapter: adapter,

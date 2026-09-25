@@ -157,12 +157,17 @@ struct ClaudeProviderAdapter: ProviderAdapter {
         runJavaScript(source, named: "focus composer", in: webView)
     }
 
+    /// The path answers first, before any DOM query. Claude Code answers
+    /// `true`: the Chat Bar expands for it as for a conversation, and a `true`
+    /// disconnects the observer, where a `false` would keep it connected and
+    /// rescanning the whole page for message nodes while a session streams.
     let conversationObserverSource = """
     function isInProviderConversation() {
-        if (document.querySelector('[data-testid="conversation-turn"]')) return true;
-        if (document.querySelector('[data-is-streaming="true"]')) return true;
         const path = window.location.pathname;
         if (path === '/chat' || path.startsWith('/chat/')) return true;
+        if (path === '/code' || path.startsWith('/code/')) return true;
+        if (document.querySelector('[data-testid="conversation-turn"]')) return true;
+        if (document.querySelector('[data-is-streaming="true"]')) return true;
         const main = document.querySelector('main');
         if (!main) return false;
         return main.querySelectorAll('article, [data-turn], [class*="Message"]').length >= 2;

@@ -22,6 +22,10 @@ final class AppCoordinator {
     static let shared = AppCoordinator()
 
     private var chatBar: ChatBarPanel?
+    /// Bumped on every summon. A selection capture still in flight from an
+    /// earlier summon no longer matches it and drops its result.
+    @ObservationIgnored
+    private var selectionCaptureGeneration = 0
     private var mainToolbarDelegate: MainToolbarDelegate?
     /// Written once in `init` and read only by `deinit`, which is nonisolated.
     @ObservationIgnored
@@ -194,19 +198,26 @@ final class AppCoordinator {
         webViewModel.resumeIfSuspended()
         closeMainWindow()
 
-        // Read before the panel is presented, while the source app is still
-        // frontmost and its selection is what the system reports as focused.
-        let selection = SelectionCaptureService.shared.captureNow()
+        // Begun before the panel is presented, while the source app still holds
+        // focus. Only the focus reads happen here; the rest of the walk runs
+        // off the main thread while the panel appears.
+        selectionCaptureGeneration += 1
+        let captureGeneration = selectionCaptureGeneration
+        let capture = SelectionCaptureService.shared.beginCapture()
 
         let bar = prepareChatBar()
         bar.presentAnimated()
         bar.focusComposer()
 
-        guard let selection else { return }
-        // Queued behind the composer focus, which is itself deferred a turn, so
-        // focusing cannot move the caret back off the top of the quotation.
-        DispatchQueue.main.async { [weak self] in
-            self?.webViewModel.insertCapturedSelection(selection)
+        // Requested only after the composer focus is queued, which is itself
+        // deferred a turn: the result lands on the main queue behind it, so
+        // focusing cannot move the caret back off the top of the quotation. A
+        // result that outlives this presentation is dropped.
+        capture?.deliver { [weak self] selection in
+            guard let self,
+                  captureGeneration == self.selectionCaptureGeneration,
+                  self.chatBar?.shouldDismissOnToggle == true else { return }
+            self.webViewModel.insertCapturedSelection(selection)
         }
     }
 
