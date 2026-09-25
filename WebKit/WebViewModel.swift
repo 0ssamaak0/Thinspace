@@ -538,7 +538,7 @@ final class WebViewModel {
         notifyHostsOfWebViewChange()
     }
 
-    // MARK: - Shared zoom and user agent
+    // MARK: - Shared zoom
 
     func zoomIn() {
         resumeIfSuspended()

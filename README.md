@@ -48,7 +48,7 @@ idea: the smallest thing that can sit between you and three very large web apps.
 - Customizable native toolbar
 - Floating Chat Bar with global shortcuts
 - Light, dark, and system themes
-- Shared zoom and user-agent settings
+- Shared text size for the main window and Chat Bar
 - Launch at login, optional hidden Dock icon, and optional hidden launch window
 - Uploads, downloads, camera, and microphone support when a provider requests them
 - Optional Text Capture: opens the Chat Bar with the text selected in another
